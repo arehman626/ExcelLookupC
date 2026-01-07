@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelLookupC", "ExcelLookupC.csproj", "{D112530F-B188-E72B-51B0-8F3021FD513E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D112530F-B188-E72B-51B0-8F3021FD513E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D112530F-B188-E72B-51B0-8F3021FD513E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D112530F-B188-E72B-51B0-8F3021FD513E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D112530F-B188-E72B-51B0-8F3021FD513E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FFDBA1EE-0F86-4FA7-8C46-90C09039056C}
+	EndGlobalSection
+EndGlobal
