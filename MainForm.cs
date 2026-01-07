@@ -1,6 +1,7 @@
 using ExcelLookupC.Models;
 using ExcelLookupC.Services;
 using ExcelLookupC.TestData;
+using System.Drawing;
 
 namespace ExcelLookupC
 {
@@ -11,6 +12,7 @@ namespace ExcelLookupC
         private ExcelFileInfo? _leftFileInfo;
         private ExcelFileInfo? _rightFileInfo;
         private ComparisonResult? _lastComparisonResult;
+        private readonly List<ColumnMapping> _columnMappings = new();
 
         public MainForm()
         {
@@ -26,19 +28,19 @@ namespace ExcelLookupC
         {
             UpdateStatus("Ready to load Excel files.");
             
-            // Add event handler for checkbox changes
-            checkedListBoxColumns.ItemCheck += CheckedListBoxColumns_ItemCheck;
+            // Add event handlers for checkbox changes
+            checkedListBoxLeftColumns.ItemCheck += CheckedListBoxColumns_ItemCheck;
+            checkedListBoxRightColumns.ItemCheck += CheckedListBoxColumns_ItemCheck;
             
-            // Add a menu strip for additional options
-            var menuStrip = new MenuStrip();
-            var toolsMenu = new ToolStripMenuItem("Tools");
-            var generateTestDataItem = new ToolStripMenuItem("Generate Test Data");
-            generateTestDataItem.Click += async (s, e) => await GenerateTestDataAsync();
-            toolsMenu.DropDownItems.Add(generateTestDataItem);
-            menuStrip.Items.Add(toolsMenu);
+            // Add event handlers for new mapping controls
+            buttonAddMapping.Click += ButtonAddMapping_Click;
+            buttonRemoveMapping.Click += ButtonRemoveMapping_Click;
             
-            this.MainMenuStrip = menuStrip;
-            this.Controls.Add(menuStrip);
+            // Create enhanced menu strip
+            CreateMenuStrip();
+            
+            // Apply enhanced styling
+            ApplyEnhancedStyling();
             
             UpdateUI();
         }
@@ -55,11 +57,15 @@ namespace ExcelLookupC
             comboBoxLeftSheet.Enabled = _leftFileInfo != null;
             comboBoxRightSheet.Enabled = _rightFileInfo != null;
             
-            bool canCompare = _leftFileInfo != null && _rightFileInfo != null &&
-                            comboBoxLeftSheet.SelectedItem != null && comboBoxRightSheet.SelectedItem != null &&
-                            checkedListBoxColumns.CheckedItems.Count > 0;
+            checkedListBoxLeftColumns.Enabled = _leftFileInfo != null && comboBoxLeftSheet.SelectedItem != null;
+            checkedListBoxRightColumns.Enabled = _rightFileInfo != null && comboBoxRightSheet.SelectedItem != null;
             
-            buttonCompare.Enabled = canCompare;
+            buttonAddMapping.Enabled = checkedListBoxLeftColumns.CheckedItems.Count > 0 && 
+                                     checkedListBoxRightColumns.CheckedItems.Count > 0;
+            
+            buttonRemoveMapping.Enabled = listBoxMappings.SelectedItem != null;
+            
+            buttonCompare.Enabled = _columnMappings.Any();
             buttonExport.Enabled = _lastComparisonResult != null;
         }
 
@@ -153,45 +159,143 @@ namespace ExcelLookupC
             this.BeginInvoke(new Action(UpdateUI));
         }
 
+        private void ButtonAddMapping_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                var leftSelected = checkedListBoxLeftColumns.CheckedItems.Cast<string>().ToList();
+                var rightSelected = checkedListBoxRightColumns.CheckedItems.Cast<string>().ToList();
+
+                if (!leftSelected.Any() || !rightSelected.Any())
+                {
+                    ShowError("Please select at least one column from both left and right sheets.");
+                    return;
+                }
+
+                if (leftSelected.Count != rightSelected.Count)
+                {
+                    ShowError("Please select the same number of columns from both sheets for mapping.");
+                    return;
+                }
+
+                // Create mappings
+                for (int i = 0; i < leftSelected.Count; i++)
+                {
+                    var mapping = new ColumnMapping
+                    {
+                        LeftColumn = leftSelected[i],
+                        RightColumn = rightSelected[i]
+                    };
+
+                    // Check if mapping already exists
+                    if (!_columnMappings.Any(m => m.LeftColumn == mapping.LeftColumn && m.RightColumn == mapping.RightColumn))
+                    {
+                        _columnMappings.Add(mapping);
+                    }
+                }
+
+                // Clear selections
+                for (int i = 0; i < checkedListBoxLeftColumns.Items.Count; i++)
+                    checkedListBoxLeftColumns.SetItemChecked(i, false);
+                for (int i = 0; i < checkedListBoxRightColumns.Items.Count; i++)
+                    checkedListBoxRightColumns.SetItemChecked(i, false);
+
+                UpdateMappingsDisplay();
+                UpdateUI();
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Error adding mapping: {ex.Message}");
+            }
+        }
+
+        private void ButtonRemoveMapping_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (listBoxMappings.SelectedItem is ColumnMapping selectedMapping)
+                {
+                    _columnMappings.Remove(selectedMapping);
+                    UpdateMappingsDisplay();
+                    UpdateUI();
+                }
+                else
+                {
+                    ShowError("Please select a mapping to remove.");
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Error removing mapping: {ex.Message}");
+            }
+        }
+
+        private void UpdateMappingsDisplay()
+        {
+            try
+            {
+                listBoxMappings.BeginUpdate();
+                listBoxMappings.DataSource = null;
+                
+                if (_columnMappings.Any())
+                {
+                    listBoxMappings.DataSource = new List<ColumnMapping>(_columnMappings);
+                    listBoxMappings.DisplayMember = nameof(ColumnMapping.DisplayText);
+                }
+                else
+                {
+                    listBoxMappings.Items.Clear();
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Error updating mappings display: {ex.Message}");
+            }
+            finally
+            {
+                listBoxMappings.EndUpdate();
+            }
+        }
+
         private async Task UpdateAvailableColumnsAsync()
         {
-            if (_leftFileInfo == null || _rightFileInfo == null ||
-                comboBoxLeftSheet.SelectedItem == null || comboBoxRightSheet.SelectedItem == null)
-            {
-                checkedListBoxColumns.Items.Clear();
-                UpdateUI();
-                return;
-            }
-
             try
             {
                 await Task.Run(() =>
                 {
-                    var leftSheetName = comboBoxLeftSheet.SelectedItem.ToString()!;
-                    var rightSheetName = comboBoxRightSheet.SelectedItem.ToString()!;
-
-                    var leftColumns = _leftFileInfo.SheetColumns[leftSheetName];
-                    var rightColumns = _rightFileInfo.SheetColumns[rightSheetName];
-
-                    // Find common columns
-                    var commonColumns = leftColumns.Intersect(rightColumns, StringComparer.OrdinalIgnoreCase).ToList();
-
                     this.Invoke(() =>
                     {
-                        checkedListBoxColumns.Items.Clear();
-                        foreach (var column in commonColumns.OrderBy(c => c))
+                        // Clear existing items and mappings
+                        checkedListBoxLeftColumns.Items.Clear();
+                        checkedListBoxRightColumns.Items.Clear();
+                        _columnMappings.Clear();
+                        UpdateMappingsDisplay();
+                        
+                        // Populate left columns
+                        if (_leftFileInfo != null && comboBoxLeftSheet.SelectedItem != null)
                         {
-                            checkedListBoxColumns.Items.Add(column);
+                            var leftSheetName = comboBoxLeftSheet.SelectedItem.ToString()!;
+                            var leftColumns = _leftFileInfo.SheetColumns[leftSheetName];
+                            foreach (var column in leftColumns.OrderBy(c => c))
+                            {
+                                checkedListBoxLeftColumns.Items.Add(column);
+                            }
                         }
-
-                        if (commonColumns.Any())
+                        
+                        // Populate right columns
+                        if (_rightFileInfo != null && comboBoxRightSheet.SelectedItem != null)
                         {
-                            UpdateStatus($"Found {commonColumns.Count} common columns between sheets.");
+                            var rightSheetName = comboBoxRightSheet.SelectedItem.ToString()!;
+                            var rightColumns = _rightFileInfo.SheetColumns[rightSheetName];
+                            foreach (var column in rightColumns.OrderBy(c => c))
+                            {
+                                checkedListBoxRightColumns.Items.Add(column);
+                            }
                         }
-                        else
-                        {
-                            UpdateStatus("No common columns found between selected sheets.");
-                        }
+                        
+                        var leftCount = checkedListBoxLeftColumns.Items.Count;
+                        var rightCount = checkedListBoxRightColumns.Items.Count;
+                        UpdateStatus($"Loaded {leftCount} left columns and {rightCount} right columns. Select columns and create mappings.");
                         
                         // Update UI state after populating columns
                         UpdateUI();
@@ -212,9 +316,9 @@ namespace ExcelLookupC
         {
             if (_leftFileInfo == null || _rightFileInfo == null ||
                 comboBoxLeftSheet.SelectedItem == null || comboBoxRightSheet.SelectedItem == null ||
-                checkedListBoxColumns.CheckedItems.Count == 0)
+                !_columnMappings.Any())
             {
-                ShowError("Please ensure both files are loaded, sheets are selected, and comparison columns are checked.");
+                ShowError("Please ensure both files are loaded, sheets are selected, and column mappings are created.");
                 return;
             }
 
@@ -231,12 +335,10 @@ namespace ExcelLookupC
                 var leftSheetData = await _excelService.LoadSheetDataAsync(_leftFileInfo.FilePath, leftSheetName);
                 var rightSheetData = await _excelService.LoadSheetDataAsync(_rightFileInfo.FilePath, rightSheetName);
 
-                var comparisonColumns = checkedListBoxColumns.CheckedItems.Cast<string>().ToList();
-
                 UpdateStatus("Comparing data...");
 
-                _lastComparisonResult = _comparisonService.CompareSheets(
-                    leftSheetData, rightSheetData, comparisonColumns,
+                _lastComparisonResult = _comparisonService.CompareSheetsWithMapping(
+                    leftSheetData, rightSheetData, _columnMappings,
                     _leftFileInfo.FileName, _rightFileInfo.FileName);
 
                 // Update results display
@@ -291,7 +393,14 @@ namespace ExcelLookupC
                     await _excelService.ExportComparisonResultAsync(_lastComparisonResult, saveFileDialog1.FileName);
 
                     UpdateStatus($"Results exported to: {saveFileDialog1.FileName}");
-                    ShowInfo($"Comparison results have been successfully exported to:\n{saveFileDialog1.FileName}");
+                    
+                    var result = ShowInfoWithOptions($"Comparison results have been successfully exported to:\n{saveFileDialog1.FileName}\n\nWould you like to open the file now?",
+                        "Export Complete", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                    
+                    if (result == DialogResult.Yes)
+                    {
+                        OpenExportedFile(saveFileDialog1.FileName);
+                    }
                 }
             }
             catch (Exception ex)
@@ -314,6 +423,29 @@ namespace ExcelLookupC
         private void ShowInfo(string message)
         {
             MessageBox.Show(message, "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private DialogResult ShowInfoWithOptions(string message, string title, MessageBoxButtons buttons, MessageBoxIcon icon)
+        {
+            return MessageBox.Show(message, title, buttons, icon);
+        }
+
+        private void OpenExportedFile(string filePath)
+        {
+            try
+            {
+                var startInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = filePath,
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(startInfo);
+                UpdateStatus($"Opened exported file: {Path.GetFileName(filePath)}");
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Error opening file: {ex.Message}\n\nFile location: {filePath}");
+            }
         }
 
         private async Task GenerateTestDataAsync()
@@ -343,6 +475,122 @@ namespace ExcelLookupC
             {
                 progressBar1.Style = ProgressBarStyle.Blocks;
             }
+        }
+
+        private void CreateMenuStrip()
+        {
+            var menuStrip = new MenuStrip();
+            
+            // Enhance menu strip styling
+            menuStrip.BackColor = Color.FromArgb(70, 130, 180);
+            menuStrip.ForeColor = Color.White;
+            menuStrip.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            
+            // Tools menu
+            var toolsMenu = new ToolStripMenuItem("Tools");
+            toolsMenu.ForeColor = Color.White;
+            
+            var generateTestDataItem = new ToolStripMenuItem("Generate Test Data");
+            generateTestDataItem.Click += async (s, e) => await GenerateTestDataAsync();
+            toolsMenu.DropDownItems.Add(generateTestDataItem);
+            
+            menuStrip.Items.Add(toolsMenu);
+            
+            // Help menu
+            var helpMenu = new ToolStripMenuItem("Help");
+            helpMenu.ForeColor = Color.White;
+            
+            var aboutItem = new ToolStripMenuItem("About Excel Lookup...");
+            aboutItem.Click += (s, e) => ShowAboutDialog();
+            helpMenu.DropDownItems.Add(aboutItem);
+            
+            menuStrip.Items.Add(helpMenu);
+            
+            this.MainMenuStrip = menuStrip;
+            this.Controls.Add(menuStrip);
+        }
+
+        private void ApplyEnhancedStyling()
+        {
+            // Form styling
+            this.BackColor = Color.FromArgb(240, 248, 255);
+            this.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            
+            // Group box styling
+            var groupBoxes = new[] { groupBoxLeft, groupBoxRight, groupBoxComparison, groupBoxResults };
+            foreach (var groupBox in groupBoxes)
+            {
+                groupBox.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+                groupBox.ForeColor = Color.FromArgb(70, 130, 180);
+                groupBox.BackColor = Color.White;
+            }
+            
+            // Button styling
+            var primaryButtons = new[] { buttonSelectLeftFile, buttonSelectRightFile, buttonCompare, buttonExport };
+            foreach (var button in primaryButtons)
+            {
+                button.BackColor = Color.FromArgb(70, 130, 180);
+                button.ForeColor = Color.White;
+                button.FlatStyle = FlatStyle.Flat;
+                button.FlatAppearance.BorderSize = 0;
+                button.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            }
+            
+            // Secondary button styling
+            var secondaryButtons = new[] { buttonAddMapping, buttonRemoveMapping };
+            foreach (var button in secondaryButtons)
+            {
+                button.BackColor = Color.FromArgb(100, 160, 200);
+                button.ForeColor = Color.White;
+                button.FlatStyle = FlatStyle.Flat;
+                button.FlatAppearance.BorderSize = 0;
+                button.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
+            }
+            
+            // Text box styling
+            var textBoxes = new[] { textBoxLeftFile, textBoxRightFile, textBoxMatched, textBoxLeftOnly, textBoxRightOnly };
+            foreach (var textBox in textBoxes)
+            {
+                textBox.BackColor = Color.FromArgb(250, 250, 250);
+                textBox.BorderStyle = BorderStyle.FixedSingle;
+                textBox.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            }
+            
+            // ComboBox styling
+            var comboBoxes = new[] { comboBoxLeftSheet, comboBoxRightSheet };
+            foreach (var comboBox in comboBoxes)
+            {
+                comboBox.BackColor = Color.White;
+                comboBox.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            }
+            
+            // CheckedListBox styling
+            var checkedListBoxes = new[] { checkedListBoxLeftColumns, checkedListBoxRightColumns };
+            foreach (var clb in checkedListBoxes)
+            {
+                clb.BackColor = Color.White;
+                clb.BorderStyle = BorderStyle.FixedSingle;
+                clb.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
+            }
+            
+            // ListBox styling
+            listBoxMappings.BackColor = Color.White;
+            listBoxMappings.BorderStyle = BorderStyle.FixedSingle;
+            listBoxMappings.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
+            
+            // ProgressBar styling
+            progressBar1.BackColor = Color.FromArgb(230, 240, 250);
+            
+            // Status strip styling
+            statusStrip1.BackColor = Color.FromArgb(70, 130, 180);
+            statusStrip1.ForeColor = Color.White;
+            toolStripStatusLabel1.ForeColor = Color.White;
+        }
+
+        private void ShowAboutDialog()
+        {
+            using var aboutForm = new AboutForm();
+            aboutForm.ShowDialog(this);
         }
     }
 }

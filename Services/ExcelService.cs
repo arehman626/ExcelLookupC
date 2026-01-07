@@ -22,32 +22,41 @@ namespace ExcelLookupC.Services
                     FileName = Path.GetFileName(filePath)
                 };
 
-                await Task.Run(() =>
-                {
-                    using var package = new ExcelPackage(new FileInfo(filePath));
+                var extension = Path.GetExtension(filePath).ToLower();
                 
-                    foreach (var worksheet in package.Workbook.Worksheets)
+                if (extension == ".csv")
+                {
+                    await LoadCsvFileInfoAsync(filePath, fileInfo);
+                }
+                else
+                {
+                    await Task.Run(() =>
                     {
-                        fileInfo.SheetNames.Add(worksheet.Name);
-                        
-                        var columns = new List<string>();
-                        if (worksheet.Dimension != null)
+                        using var package = new ExcelPackage(new FileInfo(filePath));
+                    
+                        foreach (var worksheet in package.Workbook.Worksheets)
                         {
-                            for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+                            fileInfo.SheetNames.Add(worksheet.Name);
+                            
+                            var columns = new List<string>();
+                            if (worksheet.Dimension != null)
                             {
-                                var headerValue = worksheet.Cells[1, col].Value?.ToString() ?? $"Column{col}";
-                                columns.Add(headerValue);
+                                for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
+                                {
+                                    var headerValue = worksheet.Cells[1, col].Value?.ToString() ?? $"Column{col}";
+                                    columns.Add(headerValue);
+                                }
                             }
+                            fileInfo.SheetColumns[worksheet.Name] = columns;
                         }
-                        fileInfo.SheetColumns[worksheet.Name] = columns;
-                    }
-                });
+                    });
+                }
 
                 return fileInfo;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error loading Excel file: {ex.Message}", ex);
+                throw new Exception($"Error loading file: {ex.Message}", ex);
             }
         }
 
@@ -55,51 +64,60 @@ namespace ExcelLookupC.Services
         {
             try
             {
-                return await Task.Run(() =>
-                {
-                    var sheetData = new SheetData { SheetName = sheetName };
-                    
-                    using var package = new ExcelPackage(new FileInfo(filePath));
-                    var worksheet = package.Workbook.Worksheets[sheetName];
+                var extension = Path.GetExtension(filePath).ToLower();
                 
-                    if (worksheet?.Dimension == null)
+                if (extension == ".csv")
+                {
+                    return await LoadCsvSheetDataAsync(filePath, sheetName);
+                }
+                else
+                {
+                    return await Task.Run(() =>
                     {
-                        return sheetData;
-                    }
+                        var sheetData = new SheetData { SheetName = sheetName };
+                        
+                        using var package = new ExcelPackage(new FileInfo(filePath));
+                        var worksheet = package.Workbook.Worksheets[sheetName];
+                    
+                        if (worksheet?.Dimension == null)
+                        {
+                            return sheetData;
+                        }
 
-                    // Get column names from first row
-                    for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
-                    {
-                        var headerValue = worksheet.Cells[1, col].Value?.ToString() ?? $"Column{col}";
-                        sheetData.ColumnNames.Add(headerValue);
-                    }
-
-                    // Get data rows
-                    for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
-                    {
-                        var record = new Dictionary<string, object?>();
-                        bool hasData = false;
-
+                        // Get column names from first row
                         for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
                         {
-                            var columnName = sheetData.ColumnNames[col - 1];
-                            var cellValue = worksheet.Cells[row, col].Value;
-                            record[columnName] = cellValue;
-                        
-                            if (cellValue != null && !string.IsNullOrWhiteSpace(cellValue.ToString()))
+                            var headerValue = worksheet.Cells[1, col].Value?.ToString() ?? $"Column{col}";
+                            sheetData.ColumnNames.Add(headerValue);
+                        }
+
+                        // Get data rows
+                        for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
+                        {
+                            var record = new Dictionary<string, object?>();
+                            bool hasData = false;
+
+                            for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
                             {
-                                hasData = true;
+                                var columnName = sheetData.ColumnNames[col - 1];
+                                var cellValue = worksheet.Cells[row, col].Value;
+                                record[columnName] = cellValue;
+                            
+                                if (cellValue != null && !string.IsNullOrWhiteSpace(cellValue.ToString()))
+                                {
+                                    hasData = true;
+                                }
+                            }
+
+                            if (hasData)
+                            {
+                                sheetData.Records.Add(record);
                             }
                         }
 
-                        if (hasData)
-                        {
-                            sheetData.Records.Add(record);
-                        }
-                    }
-
-                    return sheetData;
-                });
+                        return sheetData;
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -159,6 +177,18 @@ namespace ExcelLookupC.Services
                     CreateDataSheet(package, "Right Only Records", result.RightOnlyRecords);
                 }
 
+                // Create original left sheet data
+                if (result.LeftSheetData != null && result.LeftSheetData.Records.Any())
+                {
+                    CreateDataSheet(package, "Original Left Data", result.LeftSheetData.Records);
+                }
+
+                // Create original right sheet data
+                if (result.RightSheetData != null && result.RightSheetData.Records.Any())
+                {
+                    CreateDataSheet(package, "Original Right Data", result.RightSheetData.Records);
+                }
+
                 await package.SaveAsAsync(new FileInfo(outputPath));
             }
             catch (Exception ex)
@@ -198,6 +228,112 @@ namespace ExcelLookupC.Services
             }
 
             worksheet.Cells.AutoFitColumns();
+        }
+
+        private async Task LoadCsvFileInfoAsync(string filePath, ExcelFileInfo fileInfo)
+        {
+            await Task.Run(() =>
+            {
+                var sheetName = Path.GetFileNameWithoutExtension(filePath);
+                fileInfo.SheetNames.Add(sheetName);
+
+                var columns = new List<string>();
+                using var reader = new StreamReader(filePath);
+                var headerLine = reader.ReadLine();
+                
+                if (!string.IsNullOrEmpty(headerLine))
+                {
+                    columns = ParseCsvLine(headerLine);
+                }
+
+                fileInfo.SheetColumns[sheetName] = columns;
+            });
+        }
+
+        private async Task<SheetData> LoadCsvSheetDataAsync(string filePath, string sheetName)
+        {
+            return await Task.Run(() =>
+            {
+                var sheetData = new SheetData { SheetName = sheetName };
+                
+                using var reader = new StreamReader(filePath);
+                var headerLine = reader.ReadLine();
+                
+                if (string.IsNullOrEmpty(headerLine))
+                {
+                    return sheetData;
+                }
+
+                sheetData.ColumnNames = ParseCsvLine(headerLine);
+
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    var values = ParseCsvLine(line);
+                    var record = new Dictionary<string, object?>();
+                    bool hasData = false;
+
+                    for (int i = 0; i < sheetData.ColumnNames.Count; i++)
+                    {
+                        var columnName = sheetData.ColumnNames[i];
+                        var value = i < values.Count ? values[i] : "";
+                        
+                        record[columnName] = string.IsNullOrEmpty(value) ? null : value;
+                        
+                        if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            hasData = true;
+                        }
+                    }
+
+                    if (hasData)
+                    {
+                        sheetData.Records.Add(record);
+                    }
+                }
+
+                return sheetData;
+            });
+        }
+
+        private List<string> ParseCsvLine(string line)
+        {
+            var result = new List<string>();
+            var current = new StringBuilder();
+            bool inQuotes = false;
+            
+            for (int i = 0; i < line.Length; i++)
+            {
+                var c = line[i];
+                
+                if (c == '"')
+                {
+                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                    {
+                        // Escaped quote
+                        current.Append('"');
+                        i++; // Skip next quote
+                    }
+                    else
+                    {
+                        inQuotes = !inQuotes;
+                    }
+                }
+                else if (c == ',' && !inQuotes)
+                {
+                    result.Add(current.ToString());
+                    current.Clear();
+                }
+                else
+                {
+                    current.Append(c);
+                }
+            }
+            
+            result.Add(current.ToString());
+            return result;
         }
     }
 }

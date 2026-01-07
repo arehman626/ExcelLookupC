@@ -1,3 +1,5 @@
+using System.Drawing;
+
 namespace ExcelLookupC
 {
     partial class MainForm
@@ -45,8 +47,14 @@ namespace ExcelLookupC
             this.comboBoxRightSheet = new ComboBox();
             this.groupBoxComparison = new GroupBox();
             this.tableLayoutPanelComparison = new TableLayoutPanel();
-            this.labelComparisonColumns = new Label();
-            this.checkedListBoxColumns = new CheckedListBox();
+            this.labelLeftColumns = new Label();
+            this.checkedListBoxLeftColumns = new CheckedListBox();
+            this.labelRightColumns = new Label();
+            this.checkedListBoxRightColumns = new CheckedListBox();
+            this.buttonAddMapping = new Button();
+            this.labelMappings = new Label();
+            this.listBoxMappings = new ListBox();
+            this.buttonRemoveMapping = new Button();
             this.buttonCompare = new Button();
             this.buttonExport = new Button();
             this.groupBoxResults = new GroupBox();
@@ -87,13 +95,15 @@ namespace ExcelLookupC
             this.tableLayoutPanel1.Controls.Add(this.groupBoxResults, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.progressBar1, 0, 2);
             this.tableLayoutPanel1.Dock = DockStyle.Fill;
-            this.tableLayoutPanel1.Location = new Point(0, 0);
+            this.tableLayoutPanel1.Location = new Point(0, 28);
+            this.tableLayoutPanel1.Margin = new Padding(5);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.Padding = new Padding(10);
             this.tableLayoutPanel1.RowCount = 3;
             this.tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
             this.tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
             this.tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
-            this.tableLayoutPanel1.Size = new Size(1000, 700);
+            this.tableLayoutPanel1.Size = new Size(1200, 746);
             this.tableLayoutPanel1.TabIndex = 0;
             
             // 
@@ -288,58 +298,138 @@ namespace ExcelLookupC
             this.groupBoxComparison.Size = new Size(494, 309);
             this.groupBoxComparison.TabIndex = 2;
             this.groupBoxComparison.TabStop = false;
-            this.groupBoxComparison.Text = "Comparison Settings";
+            this.groupBoxComparison.Text = "Column Mapping & Comparison";
             
             // 
             // tableLayoutPanelComparison
             // 
-            this.tableLayoutPanelComparison.ColumnCount = 1;
-            this.tableLayoutPanelComparison.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            this.tableLayoutPanelComparison.Controls.Add(this.labelComparisonColumns, 0, 0);
-            this.tableLayoutPanelComparison.Controls.Add(this.checkedListBoxColumns, 0, 1);
-            this.tableLayoutPanelComparison.Controls.Add(this.buttonCompare, 0, 2);
+            this.tableLayoutPanelComparison.ColumnCount = 3;
+            this.tableLayoutPanelComparison.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+            this.tableLayoutPanelComparison.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            this.tableLayoutPanelComparison.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+            this.tableLayoutPanelComparison.Controls.Add(this.labelLeftColumns, 0, 0);
+            this.tableLayoutPanelComparison.Controls.Add(this.labelRightColumns, 2, 0);
+            this.tableLayoutPanelComparison.Controls.Add(this.checkedListBoxLeftColumns, 0, 1);
+            this.tableLayoutPanelComparison.Controls.Add(this.checkedListBoxRightColumns, 2, 1);
+            this.tableLayoutPanelComparison.Controls.Add(this.buttonAddMapping, 1, 1);
+            this.tableLayoutPanelComparison.Controls.Add(this.labelMappings, 0, 2);
+            this.tableLayoutPanelComparison.Controls.Add(this.listBoxMappings, 0, 3);
+            this.tableLayoutPanelComparison.Controls.Add(this.buttonRemoveMapping, 1, 3);
+            this.tableLayoutPanelComparison.Controls.Add(this.buttonCompare, 0, 4);
             this.tableLayoutPanelComparison.Dock = DockStyle.Fill;
             this.tableLayoutPanelComparison.Location = new Point(3, 23);
             this.tableLayoutPanelComparison.Name = "tableLayoutPanelComparison";
-            this.tableLayoutPanelComparison.RowCount = 3;
+            this.tableLayoutPanelComparison.RowCount = 5;
             this.tableLayoutPanelComparison.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
-            this.tableLayoutPanelComparison.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            this.tableLayoutPanelComparison.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
+            this.tableLayoutPanelComparison.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            this.tableLayoutPanelComparison.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
             this.tableLayoutPanelComparison.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
             this.tableLayoutPanelComparison.Size = new Size(488, 283);
             this.tableLayoutPanelComparison.TabIndex = 0;
             
             // 
-            // labelComparisonColumns
+            // labelLeftColumns
             // 
-            this.labelComparisonColumns.AutoSize = true;
-            this.labelComparisonColumns.Dock = DockStyle.Fill;
-            this.labelComparisonColumns.Location = new Point(3, 0);
-            this.labelComparisonColumns.Name = "labelComparisonColumns";
-            this.labelComparisonColumns.Size = new Size(482, 25);
-            this.labelComparisonColumns.TabIndex = 0;
-            this.labelComparisonColumns.Text = "Select columns to compare:";
-            this.labelComparisonColumns.TextAlign = ContentAlignment.MiddleLeft;
+            this.labelLeftColumns.AutoSize = true;
+            this.labelLeftColumns.Dock = DockStyle.Fill;
+            this.labelLeftColumns.Location = new Point(3, 0);
+            this.labelLeftColumns.Name = "labelLeftColumns";
+            this.labelLeftColumns.Size = new Size(189, 25);
+            this.labelLeftColumns.TabIndex = 0;
+            this.labelLeftColumns.Text = "Left Sheet Columns:";
+            this.labelLeftColumns.TextAlign = ContentAlignment.MiddleLeft;
             
             // 
-            // checkedListBoxColumns
+            // labelRightColumns
             // 
-            this.checkedListBoxColumns.Dock = DockStyle.Fill;
-            this.checkedListBoxColumns.FormattingEnabled = true;
-            this.checkedListBoxColumns.Location = new Point(3, 28);
-            this.checkedListBoxColumns.Name = "checkedListBoxColumns";
-            this.checkedListBoxColumns.Size = new Size(482, 212);
-            this.checkedListBoxColumns.TabIndex = 1;
+            this.labelRightColumns.AutoSize = true;
+            this.labelRightColumns.Dock = DockStyle.Fill;
+            this.labelRightColumns.Location = new Point(295, 0);
+            this.labelRightColumns.Name = "labelRightColumns";
+            this.labelRightColumns.Size = new Size(190, 25);
+            this.labelRightColumns.TabIndex = 1;
+            this.labelRightColumns.Text = "Right Sheet Columns:";
+            this.labelRightColumns.TextAlign = ContentAlignment.MiddleLeft;
+            
+            // 
+            // checkedListBoxLeftColumns
+            // 
+            this.checkedListBoxLeftColumns.Dock = DockStyle.Fill;
+            this.checkedListBoxLeftColumns.FormattingEnabled = true;
+            this.checkedListBoxLeftColumns.Location = new Point(3, 28);
+            this.checkedListBoxLeftColumns.Name = "checkedListBoxLeftColumns";
+            this.checkedListBoxLeftColumns.Size = new Size(189, 87);
+            this.checkedListBoxLeftColumns.TabIndex = 2;
+            
+            // 
+            // checkedListBoxRightColumns
+            // 
+            this.checkedListBoxRightColumns.Dock = DockStyle.Fill;
+            this.checkedListBoxRightColumns.FormattingEnabled = true;
+            this.checkedListBoxRightColumns.Location = new Point(295, 28);
+            this.checkedListBoxRightColumns.Name = "checkedListBoxRightColumns";
+            this.checkedListBoxRightColumns.Size = new Size(190, 87);
+            this.checkedListBoxRightColumns.TabIndex = 3;
+            
+            // 
+            // buttonAddMapping
+            // 
+            this.buttonAddMapping.Dock = DockStyle.Fill;
+            this.buttonAddMapping.Location = new Point(198, 35);
+            this.buttonAddMapping.Name = "buttonAddMapping";
+            this.buttonAddMapping.Size = new Size(91, 73);
+            this.buttonAddMapping.TabIndex = 4;
+            this.buttonAddMapping.Text = "Add\nMapping\n→";
+            this.buttonAddMapping.UseVisualStyleBackColor = true;
+            this.buttonAddMapping.Click += new EventHandler(this.ButtonAddMapping_Click);
+            
+            // 
+            // labelMappings
+            // 
+            this.labelMappings.AutoSize = true;
+            this.labelMappings.Dock = DockStyle.Fill;
+            this.labelMappings.Location = new Point(3, 118);
+            this.labelMappings.Name = "labelMappings";
+            this.labelMappings.Size = new Size(189, 25);
+            this.labelMappings.TabIndex = 5;
+            this.labelMappings.Text = "Column Mappings:";
+            this.labelMappings.TextAlign = ContentAlignment.MiddleLeft;
+            
+            // 
+            // listBoxMappings
+            // 
+            this.tableLayoutPanelComparison.SetColumnSpan(this.listBoxMappings, 2);
+            this.listBoxMappings.Dock = DockStyle.Fill;
+            this.listBoxMappings.FormattingEnabled = true;
+            this.listBoxMappings.Location = new Point(3, 146);
+            this.listBoxMappings.Name = "listBoxMappings";
+            this.listBoxMappings.Size = new Size(286, 87);
+            this.listBoxMappings.TabIndex = 6;
+            
+            // 
+            // buttonRemoveMapping
+            // 
+            this.buttonRemoveMapping.Dock = DockStyle.Fill;
+            this.buttonRemoveMapping.Location = new Point(295, 146);
+            this.buttonRemoveMapping.Name = "buttonRemoveMapping";
+            this.buttonRemoveMapping.Size = new Size(190, 87);
+            this.buttonRemoveMapping.TabIndex = 7;
+            this.buttonRemoveMapping.Text = "Remove\nSelected\nMapping";
+            this.buttonRemoveMapping.UseVisualStyleBackColor = true;
+            this.buttonRemoveMapping.Click += new EventHandler(this.ButtonRemoveMapping_Click);
             
             // 
             // buttonCompare
             // 
+            this.tableLayoutPanelComparison.SetColumnSpan(this.buttonCompare, 3);
             this.buttonCompare.Dock = DockStyle.Fill;
             this.buttonCompare.Enabled = false;
-            this.buttonCompare.Location = new Point(3, 246);
+            this.buttonCompare.Location = new Point(3, 239);
             this.buttonCompare.Name = "buttonCompare";
             this.buttonCompare.Size = new Size(482, 34);
-            this.buttonCompare.TabIndex = 2;
-            this.buttonCompare.Text = "Compare";
+            this.buttonCompare.TabIndex = 8;
+            this.buttonCompare.Text = "Compare Mapped Columns";
             this.buttonCompare.UseVisualStyleBackColor = true;
             this.buttonCompare.Click += new EventHandler(this.ButtonCompare_Click);
             
@@ -472,18 +562,23 @@ namespace ExcelLookupC
             // 
             // statusStrip1
             // 
+            this.statusStrip1.BackColor = Color.FromArgb(70, 130, 180);
+            this.statusStrip1.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
             this.statusStrip1.ImageScalingSize = new Size(20, 20);
             this.statusStrip1.Items.AddRange(new ToolStripItem[] {
             this.toolStripStatusLabel1});
-            this.statusStrip1.Location = new Point(0, 700);
+            this.statusStrip1.Location = new Point(0, 774);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new Size(1000, 26);
+            this.statusStrip1.Padding = new Padding(1, 0, 16, 0);
+            this.statusStrip1.Size = new Size(1200, 26);
             this.statusStrip1.TabIndex = 1;
             this.statusStrip1.Text = "statusStrip1";
             
             // 
             // toolStripStatusLabel1
             // 
+            this.toolStripStatusLabel1.BackColor = Color.Transparent;
+            this.toolStripStatusLabel1.ForeColor = Color.White;
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.Size = new Size(49, 20);
             this.toolStripStatusLabel1.Text = "Ready";
@@ -491,27 +586,31 @@ namespace ExcelLookupC
             // 
             // openFileDialog1
             // 
-            this.openFileDialog1.Filter = "Excel files (*.xlsx;*.xls)|*.xlsx;*.xls|All files (*.*)|*.*";
-            this.openFileDialog1.Title = "Select Excel File";
+            this.openFileDialog1.Filter = "Excel and CSV files (*.xlsx;*.xls;*.csv)|*.xlsx;*.xls;*.csv|Excel files (*.xlsx;*.xls)|*.xlsx;*.xls|CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+            this.openFileDialog1.Title = "Select Excel or CSV File";
             
             // 
             // saveFileDialog1
             // 
             this.saveFileDialog1.DefaultExt = "xlsx";
             this.saveFileDialog1.Filter = "Excel files (*.xlsx)|*.xlsx|All files (*.*)|*.*";
-            this.saveFileDialog1.Title = "Save Comparison Results";
+            this.saveFileDialog1.Title = "Save Comparison Results with Original Data";
             
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new SizeF(8F, 20F);
             this.AutoScaleMode = AutoScaleMode.Font;
-            this.ClientSize = new Size(1000, 726);
+            this.BackColor = Color.FromArgb(240, 248, 255);
+            this.ClientSize = new Size(1200, 800);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.statusStrip1);
-            this.MinimumSize = new Size(800, 600);
+            this.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            this.Icon = SystemIcons.Application;
+            this.MinimumSize = new Size(1000, 700);
             this.Name = "MainForm";
-            this.Text = "Excel Lookup - File Comparison Tool";
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.Text = "Excel Lookup - Advanced File Comparison Tool v2.0";
             this.WindowState = FormWindowState.Maximized;
             
             this.tableLayoutPanel1.ResumeLayout(false);
@@ -552,8 +651,14 @@ namespace ExcelLookupC
         private ComboBox comboBoxRightSheet;
         private GroupBox groupBoxComparison;
         private TableLayoutPanel tableLayoutPanelComparison;
-        private Label labelComparisonColumns;
-        private CheckedListBox checkedListBoxColumns;
+        private Label labelLeftColumns;
+        private Label labelRightColumns;
+        private CheckedListBox checkedListBoxLeftColumns;
+        private CheckedListBox checkedListBoxRightColumns;
+        private Button buttonAddMapping;
+        private Label labelMappings;
+        private ListBox listBoxMappings;
+        private Button buttonRemoveMapping;
         private Button buttonCompare;
         private GroupBox groupBoxResults;
         private TableLayoutPanel tableLayoutPanelResults;

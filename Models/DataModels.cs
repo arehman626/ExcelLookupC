@@ -10,7 +10,10 @@ namespace ExcelLookupC.Models
         public string LeftSheetName { get; set; } = string.Empty;
         public string RightSheetName { get; set; } = string.Empty;
         public List<string> ComparisonColumns { get; set; } = new();
+        public List<ColumnMapping> ColumnMappings { get; set; } = new();
         public DateTime ComparisonTimestamp { get; set; } = DateTime.Now;
+        public SheetData? LeftSheetData { get; set; }
+        public SheetData? RightSheetData { get; set; }
     }
 
     public class ExcelFileInfo
@@ -26,5 +29,12 @@ namespace ExcelLookupC.Models
         public string SheetName { get; set; } = string.Empty;
         public List<string> ColumnNames { get; set; } = new();
         public List<Dictionary<string, object?>> Records { get; set; } = new();
+    }
+
+    public class ColumnMapping
+    {
+        public string LeftColumn { get; set; } = string.Empty;
+        public string RightColumn { get; set; } = string.Empty;
+        public string DisplayText => $"{LeftColumn} → {RightColumn}";
     }
 }
