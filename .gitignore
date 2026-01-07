@@ -51,3 +51,8 @@ bld/
 # Temporary files
 *.tmp
 *.temp
+
+# Large deployment files
+standalone/
+single-file/
+*.zip
