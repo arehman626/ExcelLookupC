@@ -45,8 +45,15 @@ A powerful C# Windows Forms application for comparing Excel files with an intuit
 
 ### Option 2: Download Release Binary
 1. Download the latest release from the GitHub releases page
-2. Extract the ZIP file to your desired location
-3. Run `ExcelLookupC.exe`
+2. Choose your preferred version:
+   - **Single File**: `single-file/ExcelLookupC.exe` (158MB) - Single executable, no dependencies
+   - **Standalone**: `standalone/` folder - Self-contained with separate files
+   - **Framework Dependent**: `publish/` folder - Requires .NET 8.0 runtime
+3. Extract (if needed) and run `ExcelLookupC.exe`
+
+### Option 3: Direct Download
+- **Single Executable**: Download `single-file/ExcelLookupC.exe` - runs immediately, no installation required
+- **Best for**: Quick testing, simple distribution, systems without .NET
 
 ## Usage
 
